@@ -5,18 +5,23 @@
   "type": "module",
   "scripts": {
     "dev": "bun --hot src/index.ts",
+    "dev:server": "bun --watch server/index.ts",
     "build": "bun build ./src/index.html --outdir=dist --sourcemap --target=browser --minify --define:process.env.NODE_ENV='\"production\"' --env='BUN_PUBLIC_*'",
     "start": "NODE_ENV=production bun src/index.ts"
   },
   "dependencies": {
+    "drizzle-orm": "^0.45.4",
     "elysia": "^1.4.30",
+    "mariadb": "^3.5.4",
+    "mysql2": "^3.24.6",
     "react": "^19",
     "react-dom": "^19"
   },
   "devDependencies": {
+    "@types/bun": "latest",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/bun": "latest"
+    "drizzle-kit": "^0.31.11"
   },
   "peerDependencies": {
     "typescript": "^7"
