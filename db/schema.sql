@@ -1,6 +1,5 @@
 -- Venue Booking System schema (MariaDB 10.5+, InnoDB)
 -- Store all DATETIME values in UTC. Convert to campus local time in the app.
--- Run with:  mariadb -u superadmin -p <db_name> < db/schema.sql
 
 SET NAMES utf8mb4;
 
@@ -16,14 +15,17 @@ CREATE TABLE IF NOT EXISTS users (
   id             INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   name           VARCHAR(120) NOT NULL,
   email          VARCHAR(150) NOT NULL UNIQUE,
+  mis_number     VARCHAR(20)  NULL UNIQUE,          -- students only; NULL for faculty/HOD/admin
   password_hash  VARCHAR(255) NOT NULL,
   role           ENUM('requester','approver','admin') NOT NULL DEFAULT 'requester',
+  user_type      ENUM('student','faculty','hod','admin') NOT NULL DEFAULT 'student', -- drives UI routing
   department_id  INT UNSIGNED NULL,
   is_active      BOOLEAN NOT NULL DEFAULT TRUE,     -- deactivate instead of deleting
   last_login_at  DATETIME NULL,
   created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (department_id) REFERENCES departments(id)
+  FOREIGN KEY (department_id) REFERENCES departments(id),
+  INDEX idx_users_mis (mis_number)                 -- fast student login lookup
 );
 
 -- Server-side sessions (store a HASH of the cookie token, never the raw token)
