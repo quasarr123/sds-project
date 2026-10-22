@@ -1,0 +1,4 @@
+// Re-export master App for frontend app.jsc
+import App from '../src/App.jsx';
+
+export { App, App as default };
