@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
-import { AlertCircle, ArrowRight, Sparkles } from 'lucide-react';
+﻿import React, { useState } from 'react';
+import { AlertCircle, ArrowRight, ArrowLeft } from 'lucide-react';
 import coepppImg from './coeppp.jpg';
 
-// ─── Demo presets for quick evaluation ───────────────────────────────────────
-const DEMO_PRESETS = [
-  { label: 'Student',    name: 'Aarav Deshmukh',            mis: '112103045', role: 'student',    email: 'deshmukha21.comp@coep.ac.in' },
-  { label: 'Faculty',    name: 'Dr. Sunita Patil',          mis: 'FAC-9021',  role: 'faculty',    email: 'spatil.comp@coep.ac.in' },
-  { label: 'HOD',        name: 'Prof. Dr. Rajesh Kulkarni', mis: 'HOD-4410',  role: 'hod',        email: 'hod.comp@coep.ac.in' },
-  { label: 'Superadmin', name: 'Col. Vikram Shinde (Retd.)',mis: 'REG-001',   role: 'superadmin', email: 'registrar@coeptech.ac.in' },
+// Role options for the dropdown
+const ROLES = [
+  { value: 'student',    label: 'Student' },
+  { value: 'faculty',    label: 'Faculty' },
+  { value: 'hod',        label: 'Head of Department (HOD)' },
+  { value: 'superadmin', label: 'Superadmin' },
 ];
 
 function getDepartment(role) {
@@ -24,10 +24,13 @@ function getDesignation(role) {
 }
 
 export function LoginPage({ onLoginSuccess }) {
+  // Step control: null = show role picker, string = show login form
+  const [selectedRole, setSelectedRole] = useState(null);
+  const [rolePickerValue, setRolePickerValue] = useState('student');
+
   // Form fields
   const [name,     setName]     = useState('');
   const [mis,      setMis]      = useState('');
-  const [role,     setRole]     = useState('student');
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
 
@@ -37,470 +40,378 @@ export function LoginPage({ onLoginSuccess }) {
   const [forgotModal, setForgotModal] = useState(false);
   const [forgotSent,  setForgotSent]  = useState(false);
 
-  // Fill form fields from a demo preset
-  function applyPreset(preset) {
-    setName(preset.name);
-    setMis(preset.mis);
-    setRole(preset.role);
-    setEmail(preset.email);
-    setPassword('coep@2026!');
+  function handleRoleContinue() {
+    setSelectedRole(rolePickerValue);
+    setError('');
+    setName(''); setMis(''); setEmail(''); setPassword('');
+  }
+
+  function handleBack() {
+    setSelectedRole(null);
     setError('');
   }
 
-  // Validate inputs, then simulate SSO login
   function handleSubmit(e) {
     e.preventDefault();
     setError('');
-
-    if (!name.trim())  { setError('Please enter your full name.');       return; }
-    if (!mis.trim())   { setError('Please enter your COEP MIS Number.'); return; }
-    if (!email.trim()) { setError('Please enter your COEP Outlook ID.'); return; }
-
+    if (!name.trim())                                   { setError('Please enter your full name.');       return; }
+    if (selectedRole === 'student' && !mis.trim())      { setError('Please enter your COEP MIS Number.'); return; }
+    if (!email.trim())                                  { setError('Please enter your COEP Outlook ID.'); return; }
     const validDomain = email.includes('@coep.ac.in') || email.includes('@coeptech.ac.in');
-    if (!validDomain)  { setError('Email must end with @coep.ac.in or @coeptech.ac.in'); return; }
+    if (!validDomain) { setError('Email must end with @coep.ac.in or @coeptech.ac.in'); return; }
 
     setLoading(true);
-
-    // Simulate SSO auth — replace with real API call when ready
     setTimeout(() => {
       setLoading(false);
       const user = {
-        id:          `u-${mis.replace(/[^a-zA-Z0-9]/g, '')}`,
+        id:          'u-' + (mis || email).replace(/[^a-zA-Z0-9]/g, ''),
         name:        name.trim(),
         mis:         mis.trim(),
-        role:        role,
+        role:        selectedRole,
         email:       email.trim(),
-        department:  getDepartment(role),
-        designation: getDesignation(role),
+        department:  getDepartment(selectedRole),
+        designation: getDesignation(selectedRole),
         avatar:      name.trim().split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'CP',
       };
       if (onLoginSuccess) onLoginSuccess(user);
     }, 450);
   }
 
+  const roleLabel = ROLES.find(r => r.value === selectedRole)?.label || '';
+
   return (
-    <div className="login-page">
+    <div className="lp-page">
       <style>{`
-        /* ── Page background ─────────────────────────────────────── */
-        .login-page {
+        /* Page */
+        .lp-page {
           min-height: 100vh;
           display: flex;
+          flex-direction: column;
           align-items: center;
           justify-content: center;
-          padding: 24px 16px;
+          gap: 20px;
+          padding: 28px 16px;
           background: radial-gradient(circle at 30% 40%, #1e4a3c, #0d221a 70%);
           font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
           box-sizing: border-box;
         }
 
-        /* ── Centered card ───────────────────────────────────────── */
-        .login-card {
+        /* Title above card */
+        .lp-header {
+          text-align: center;
+        }
+        .lp-header h1 {
+          font-size: 22px;
+          font-weight: 800;
+          color: #ffffff;
+          margin: 0 0 4px;
+          letter-spacing: 0.2px;
+          text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        }
+        .lp-header p {
+          font-size: 13px;
+          color: #7ecfbf;
+          margin: 0;
+          text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+        }
+
+        /* Card */
+        .lp-card {
           width: 100%;
-          max-width: 460px;
+          max-width: 440px;
           background: #1c382e;
-          border-radius: 28px;
+          border-radius: 24px;
           box-shadow: 0 24px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.07);
           overflow: hidden;
         }
 
-        /* ── College banner image at top ─────────────────────────── */
-        .login-banner {
-          position: relative;
-          height: 140px;
+        /* Banner image (no text overlay) */
+        .lp-banner {
+          height: 130px;
           overflow: hidden;
         }
-        .login-banner img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
+        .lp-banner img {
+          width: 100%; height: 100%;
+          object-fit: cover; display: block;
+        }
+
+        /* Form area */
+        .lp-body {
+          padding: 24px 26px 20px;
+        }
+
+        /* Step 1: role picker */
+        .lp-role-label {
           display: block;
+          font-size: 12px; font-weight: 600;
+          color: #c0d8d0; margin-bottom: 8px;
         }
-        /* Dark gradient overlay so text stays readable on any image */
-        .login-banner::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(to bottom, rgba(0,0,0,0.15), rgba(13,34,26,0.85));
+        .lp-role-select {
+          width: 100%;
+          background: #122820;
+          border: 1px solid rgba(255,255,255,0.12);
+          border-radius: 12px;
+          padding: 12px 16px;
+          font-size: 14px; color: #fff;
+          outline: none; cursor: pointer;
+          transition: border-color 0.2s, box-shadow 0.2s;
+          box-sizing: border-box;
+          margin-bottom: 18px;
         }
-        .login-banner-label {
-          position: absolute;
-          bottom: 14px;
-          left: 20px;
-          z-index: 1;
-          color: #fff;
+        .lp-role-select:focus {
+          border-color: #4fa39b;
+          box-shadow: 0 0 0 3px rgba(79,163,155,0.22);
         }
-        .login-banner-label h2 {
-          font-size: 14px;
-          font-weight: 800;
-          margin: 0;
-          letter-spacing: 0.4px;
-          text-transform: uppercase;
+        .lp-role-select option { background: #132821; }
+
+        /* Step 2: form header */
+        .lp-form-header {
+          display: flex; align-items: center; gap: 10px; margin-bottom: 2px;
         }
-        .login-banner-label p {
-          font-size: 11px;
-          color: #a8d5c8;
-          margin: 2px 0 0;
+        .lp-back-btn {
+          width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+          background: rgba(255,255,255,0.07);
+          border: 1px solid rgba(255,255,255,0.1);
+          display: flex; align-items: center; justify-content: center;
+          cursor: pointer; color: #9abdb0;
+          transition: background 0.15s;
+        }
+        .lp-back-btn:hover { background: rgba(255,255,255,0.14); color: #fff; }
+        .lp-form-title { font-size: 20px; font-weight: 700; color: #fff; margin: 0; }
+        .lp-role-badge {
+          display: inline-block;
+          background: rgba(79,163,155,0.18); color: #6dcfc5;
+          font-size: 11px; font-weight: 700;
+          padding: 3px 10px; border-radius: 9999px;
+          margin: 4px 0 16px; text-transform: uppercase; letter-spacing: 0.4px;
         }
 
-        /* ── Form body ───────────────────────────────────────────── */
-        .login-body {
-          padding: 28px 30px 24px;
-        }
-        .login-heading {
-          font-size: 26px;
-          font-weight: 700;
-          color: #fff;
-          margin: 0 0 4px;
-        }
-        .login-subheading {
-          font-size: 13px;
-          color: #85b3a6;
-          margin: 0 0 20px;
-        }
-
-        /* ── Error banner ────────────────────────────────────────── */
-        .login-error {
-          display: flex;
-          align-items: center;
-          gap: 8px;
+        /* Error */
+        .lp-error {
+          display: flex; align-items: center; gap: 8px;
           background: rgba(239,68,68,0.15);
           border: 1px solid rgba(239,68,68,0.3);
-          color: #fca5a5;
-          font-size: 12px;
-          padding: 9px 14px;
-          border-radius: 10px;
-          margin-bottom: 14px;
+          color: #fca5a5; font-size: 12px;
+          padding: 9px 14px; border-radius: 10px; margin-bottom: 14px;
         }
 
-        /* ── Form fields ─────────────────────────────────────────── */
-        .field { margin-bottom: 13px; }
-        .field label {
-          display: block;
-          font-size: 12px;
-          font-weight: 600;
-          color: #c0d8d0;
-          margin-bottom: 6px;
+        /* Fields */
+        .lp-field { margin-bottom: 12px; }
+        .lp-field label {
+          display: block; font-size: 12px; font-weight: 600;
+          color: #c0d8d0; margin-bottom: 5px;
         }
-        .field input,
-        .field select {
+        .lp-field input {
           width: 100%;
           background: #122820;
           border: 1px solid rgba(255,255,255,0.1);
           border-radius: 9999px;
           padding: 10px 16px;
-          font-size: 13px;
-          color: #fff;
-          outline: none;
+          font-size: 13px; color: #fff; outline: none;
           transition: border-color 0.2s, box-shadow 0.2s;
           box-sizing: border-box;
-          cursor: pointer;
         }
-        .field input::placeholder { color: #55796c; }
-        .field input:focus,
-        .field select:focus {
+        .lp-field input::placeholder { color: #55796c; }
+        .lp-field input:focus {
           border-color: #4fa39b;
           box-shadow: 0 0 0 3px rgba(79,163,155,0.22);
           background: #0f2018;
         }
-        .field select option { background: #132821; }
 
-        /* Two fields side by side */
-        .field-row {
-          display: grid;
-          grid-template-columns: 1.1fr 1fr;
-          gap: 10px;
-          margin-bottom: 13px;
+        /* Password hint links */
+        .lp-pw-hint {
+          display: flex; gap: 14px; justify-content: flex-end; margin-top: 5px;
         }
+        .lp-pw-hint span {
+          font-size: 12px; color: #5ea89e; cursor: pointer;
+        }
+        .lp-pw-hint span:hover { text-decoration: underline; color: #82cbbf; }
 
-        /* Forgot password link */
-        .forgot-link {
-          display: block;
-          text-align: right;
-          font-size: 12px;
-          color: #5ea89e;
-          margin-top: 5px;
-          cursor: pointer;
+        /* Submit button */
+        .lp-btn {
+          width: 100%; background: #4fa39b; color: #fff; border: none;
+          border-radius: 9999px; padding: 12px;
+          font-size: 15px; font-weight: 700; cursor: pointer;
+          display: flex; align-items: center; justify-content: center; gap: 8px;
+          margin-top: 14px; transition: background 0.2s, transform 0.15s;
         }
-        .forgot-link:hover { text-decoration: underline; color: #82cbbf; }
+        .lp-btn:hover    { background: #3e8f87; transform: translateY(-1px); }
+        .lp-btn:active   { transform: translateY(0); }
+        .lp-btn:disabled { opacity: 0.7; cursor: not-allowed; }
 
-        /* ── Submit button ───────────────────────────────────────── */
-        .login-btn {
-          width: 100%;
-          background: #4fa39b;
-          color: #fff;
-          border: none;
-          border-radius: 9999px;
-          padding: 12px;
-          font-size: 15px;
-          font-weight: 700;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          margin-top: 16px;
-          transition: background 0.2s, transform 0.15s;
-        }
-        .login-btn:hover    { background: #3e8f87; transform: translateY(-1px); }
-        .login-btn:active   { transform: translateY(0); }
-        .login-btn:disabled { opacity: 0.7; cursor: not-allowed; }
-
-        /* ── Demo preset chips ───────────────────────────────────── */
-        .presets {
-          margin-top: 16px;
-          padding: 10px 14px;
-          background: rgba(0,0,0,0.2);
-          border-radius: 12px;
-          border: 1px solid rgba(255,255,255,0.06);
-        }
-        .presets-label {
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          font-size: 11px;
-          color: #90b8ac;
-          margin-bottom: 8px;
-        }
-        .presets-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-        .preset-chip {
-          padding: 4px 12px;
-          border-radius: 9999px;
-          background: rgba(255,255,255,0.07);
-          border: 1px solid rgba(255,255,255,0.12);
-          color: #dceee8;
-          font-size: 11px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: background 0.15s;
-        }
-        .preset-chip:hover { background: #4fa39b; border-color: #4fa39b; color: #fff; }
-
-        /* ── Footer links ────────────────────────────────────────── */
-        .login-footer {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-top: 16px;
-          padding-top: 14px;
+        /* Footer */
+        .lp-footer {
+          display: flex; justify-content: space-between; align-items: center;
+          margin-top: 16px; padding-top: 14px;
           border-top: 1px solid rgba(255,255,255,0.07);
-          font-size: 11px;
-          color: #6e9386;
+          font-size: 11px; color: #6e9386;
         }
-        .footer-link { color: #5ea89e; cursor: pointer; }
-        .footer-link:hover { text-decoration: underline; }
+        .lp-footer-link { color: #5ea89e; cursor: pointer; }
+        .lp-footer-link:hover { text-decoration: underline; }
 
-        /* ── Forgot-password modal ───────────────────────────────── */
-        .modal-backdrop {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.65);
+        /* Modal */
+        .lp-modal-bg {
+          position: fixed; inset: 0; background: rgba(0,0,0,0.65);
           backdrop-filter: blur(4px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 100;
-          padding: 20px;
+          display: flex; align-items: center; justify-content: center;
+          z-index: 100; padding: 20px;
         }
-        .modal-box {
-          background: #fff;
-          border-radius: 18px;
-          padding: 28px;
-          max-width: 400px;
-          width: 100%;
+        .lp-modal {
+          background: #fff; border-radius: 18px; padding: 28px;
+          max-width: 400px; width: 100%;
           box-shadow: 0 20px 40px rgba(0,0,0,0.35);
         }
-        .modal-box h3 { font-size: 17px; font-weight: 700; color: #17362a; margin: 0 0 8px; }
-        .modal-box p  { font-size: 13px; color: #4a7060; margin: 0 0 14px; }
-        .modal-input {
-          width: 100%;
-          padding: 10px 14px;
-          border-radius: 8px;
-          border: 1px solid #cbd5e1;
-          font-size: 13px;
-          margin-bottom: 14px;
-          box-sizing: border-box;
+        .lp-modal h3 { font-size: 17px; font-weight: 700; color: #17362a; margin: 0 0 8px; }
+        .lp-modal p  { font-size: 13px; color: #4a7060; margin: 0 0 14px; }
+        .lp-modal-input {
+          width: 100%; padding: 10px 14px; border-radius: 8px;
+          border: 1px solid #cbd5e1; font-size: 13px;
+          margin-bottom: 14px; box-sizing: border-box;
         }
-        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
-        .modal-btn { padding: 8px 18px; border-radius: 8px; border: none; font-weight: 600; font-size: 13px; cursor: pointer; }
-        .modal-btn-cancel  { background: #f1f5f9; color: #475569; }
-        .modal-btn-primary { background: #4fa39b; color: #fff; }
+        .lp-modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+        .lp-modal-btn { padding: 8px 18px; border-radius: 8px; border: none; font-weight: 600; font-size: 13px; cursor: pointer; }
+        .lp-modal-cancel  { background: #f1f5f9; color: #475569; }
+        .lp-modal-primary { background: #4fa39b; color: #fff; }
 
-        /* ── Responsive ──────────────────────────────────────────── */
         @media (max-width: 500px) {
-          .login-card { border-radius: 20px; }
-          .login-body { padding: 22px 20px 20px; }
-          .field-row  { grid-template-columns: 1fr; }
+          .lp-card { border-radius: 18px; }
+          .lp-body { padding: 20px 18px 18px; }
         }
       `}</style>
 
-      {/* Card */}
-      <div className="login-card">
+      {/* College title above the card */}
+      <div className="lp-header">
+        <h1>COEP Technological University</h1>
+        <p>Shivajinagar, Pune &bull; Estd. 1854</p>
+      </div>
 
-        {/* College banner */}
-        <div className="login-banner">
-          <img src={coepppImg} alt="COEP Technological University" />
-          <div className="login-banner-label">
-            <h2>COEP Technological University</h2>
-            <p>Shivajinagar, Pune • Estd. 1854</p>
-          </div>
+      {/* Login card */}
+      <div className="lp-card">
+
+        {/* Banner image — clean, no text overlay */}
+        <div className="lp-banner">
+          <img src={coepppImg} alt="COEP Technological University campus" />
         </div>
 
-        {/* Form */}
-        <div className="login-body">
-          <p className="login-heading">Login</p>
-          <p className="login-subheading">Enter your institutional credentials to access the portal</p>
+        <div className="lp-body">
 
-          {/* Error message */}
-          {error && (
-            <div className="login-error">
-              <AlertCircle size={14} />
-              <span>{error}</span>
-            </div>
+          {/* STEP 1: Role selection */}
+          {selectedRole === null && (
+            <>
+              <label className="lp-role-label">Select your role</label>
+              <select
+                className="lp-role-select"
+                value={rolePickerValue}
+                onChange={e => setRolePickerValue(e.target.value)}
+              >
+                {ROLES.map(r => (
+                  <option key={r.value} value={r.value}>{r.label}</option>
+                ))}
+              </select>
+
+              <button className="lp-btn" onClick={handleRoleContinue}>
+                <span>Continue</span>
+                <ArrowRight size={16} />
+              </button>
+
+              <div className="lp-footer">
+                <span className="lp-footer-link" onClick={() => alert('COEP Space Allocation & Sound Ordinance Policy 2026')}>
+                  Terms &amp; Services
+                </span>
+                <span>Help: <strong style={{ color: '#8cded2' }}>superadmin@coeptech.ac.in</strong></span>
+              </div>
+            </>
           )}
 
-          <form onSubmit={handleSubmit}>
-
-            {/* Full Name */}
-            <div className="field">
-              <label>Full Name</label>
-              <input
-                type="text"
-                required
-                placeholder="Enter your full name"
-                value={name}
-                onChange={e => setName(e.target.value)}
-              />
-            </div>
-
-            {/* MIS Number + Role — side by side */}
-            <div className="field-row">
-              <div className="field" style={{ margin: 0 }}>
-                <label>COEP MIS Number</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. 112103045"
-                  value={mis}
-                  onChange={e => setMis(e.target.value)}
-                />
+          {/* STEP 2: Role-specific login form */}
+          {selectedRole !== null && (
+            <>
+              <div className="lp-form-header">
+                <button className="lp-back-btn" onClick={handleBack} title="Change role">
+                  <ArrowLeft size={14} />
+                </button>
+                <p className="lp-form-title">Login</p>
               </div>
-              <div className="field" style={{ margin: 0 }}>
-                <label>Role</label>
-                <select value={role} onChange={e => setRole(e.target.value)}>
-                  <option value="student">Student</option>
-                  <option value="faculty">Faculty</option>
-                  <option value="hod">HOD</option>
-                  <option value="superadmin">Superadmin</option>
-                </select>
+              <span className="lp-role-badge">{roleLabel}</span>
+
+              {error && (
+                <div className="lp-error">
+                  <AlertCircle size={14} />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit}>
+
+                <div className="lp-field">
+                  <label>Full Name</label>
+                  <input type="text" required placeholder="Enter your full name"
+                    value={name} onChange={e => setName(e.target.value)} />
+                </div>
+
+                {/* MIS only for students */}
+                {selectedRole === 'student' && (
+                  <div className="lp-field">
+                    <label>COEP MIS Number</label>
+                    <input type="text" required placeholder="e.g. 112103045"
+                      value={mis} onChange={e => setMis(e.target.value)} />
+                  </div>
+                )}
+
+                <div className="lp-field">
+                  <label>COEP Outlook ID</label>
+                  <input type="email" required placeholder="name@coep.ac.in"
+                    value={email} onChange={e => setEmail(e.target.value)} />
+                </div>
+
+                <div className="lp-field">
+                  <label>Password</label>
+                  <input type="password" required placeholder="Enter your password"
+                    value={password} onChange={e => setPassword(e.target.value)} />
+                  <div className="lp-pw-hint">
+                    <span onClick={() => setForgotModal(true)}>Forgot Password?</span>
+                    <span onClick={() => setForgotModal(true)}>Create New Password</span>
+                  </div>
+                </div>
+
+                <button type="submit" disabled={loading} className="lp-btn">
+                  {loading ? 'Authenticating...' : <><span>Login to Portal</span><ArrowRight size={16} /></>}
+                </button>
+              </form>
+
+              <div className="lp-footer">
+                <span className="lp-footer-link" onClick={() => alert('COEP Space Allocation & Sound Ordinance Policy 2026')}>
+                  Terms &amp; Services
+                </span>
+                <span>Help: <strong style={{ color: '#8cded2' }}>superadmin@coeptech.ac.in</strong></span>
               </div>
-            </div>
+            </>
+          )}
 
-            {/* COEP Email */}
-            <div className="field">
-              <label>COEP Outlook ID</label>
-              <input
-                type="email"
-                required
-                placeholder="name@coep.ac.in"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-              />
-            </div>
-
-            {/* Password */}
-            <div className="field">
-              <label>Password</label>
-              <input
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-              />
-              <span className="forgot-link" onClick={() => setForgotModal(true)}>
-                Forgot Password?
-              </span>
-            </div>
-
-            {/* Login button */}
-            <button type="submit" disabled={loading} className="login-btn">
-              {loading
-                ? 'Authenticating...'
-                : <><span>Login to Portal</span><ArrowRight size={16} /></>
-              }
-            </button>
-
-            {/* Demo preset chips */}
-            <div className="presets">
-              <div className="presets-label">
-                <Sparkles size={12} color="#f59e0b" />
-                <span>Quick demo credentials:</span>
-              </div>
-              <div className="presets-chips">
-                {DEMO_PRESETS.map(preset => (
-                  <button
-                    key={preset.role}
-                    type="button"
-                    className="preset-chip"
-                    onClick={() => applyPreset(preset)}
-                  >
-                    {preset.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </form>
-
-          {/* Footer */}
-          <div className="login-footer">
-            <span
-              className="footer-link"
-              onClick={() => alert('COEP Technological University Space Allocation & Sound Ordinance Policy 2026')}
-            >
-              Terms & Services
-            </span>
-            <span>Help: <strong style={{ color: '#8cded2' }}>NOC@coep.ac.in</strong></span>
-          </div>
         </div>
       </div>
 
-      {/* Forgot Password Modal */}
+      {/* Forgot / Create Password Modal */}
       {forgotModal && (
-        <div className="modal-backdrop" onClick={() => setForgotModal(false)}>
-          <div className="modal-box" onClick={e => e.stopPropagation()}>
-            <h3>Reset Password</h3>
-
+        <div className="lp-modal-bg" onClick={() => setForgotModal(false)}>
+          <div className="lp-modal" onClick={e => e.stopPropagation()}>
+            <h3>Reset / Create Password</h3>
             {forgotSent ? (
               <>
-                <p>
-                  A reset link has been sent to <strong>{email || 'your COEP Outlook address'}</strong>.
-                  Check your inbox.
-                </p>
-                <div className="modal-actions">
-                  <button
-                    className="modal-btn modal-btn-primary"
-                    onClick={() => { setForgotModal(false); setForgotSent(false); }}
-                  >
-                    Done
-                  </button>
+                <p>A reset link has been sent to <strong>{email || 'your COEP Outlook address'}</strong>. Check your inbox.</p>
+                <div className="lp-modal-actions">
+                  <button className="lp-modal-btn lp-modal-primary"
+                    onClick={() => { setForgotModal(false); setForgotSent(false); }}>Done</button>
                 </div>
               </>
             ) : (
               <>
-                <p>Enter your COEP Outlook ID and we'll send a reset link.</p>
-                <input
-                  className="modal-input"
-                  type="email"
-                  placeholder="username@coep.ac.in"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                />
-                <div className="modal-actions">
-                  <button className="modal-btn modal-btn-cancel" onClick={() => setForgotModal(false)}>
-                    Cancel
-                  </button>
-                  <button className="modal-btn modal-btn-primary" onClick={() => setForgotSent(true)}>
-                    Send Link
-                  </button>
+                <p>Enter your COEP Outlook ID and we will send a link to reset or create your password.</p>
+                <input className="lp-modal-input" type="email" placeholder="username@coep.ac.in"
+                  value={email} onChange={e => setEmail(e.target.value)} />
+                <div className="lp-modal-actions">
+                  <button className="lp-modal-btn lp-modal-cancel" onClick={() => setForgotModal(false)}>Cancel</button>
+                  <button className="lp-modal-btn lp-modal-primary" onClick={() => setForgotSent(true)}>Send Link</button>
                 </div>
               </>
             )}
