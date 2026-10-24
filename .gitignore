@@ -21,6 +21,10 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .env.test.local
 .env.production.local
 .env.local
+<<<<<<< HEAD
+=======
+!.env.example
+>>>>>>> ff6d457 (createusercommit)
 
 # caches
 .eslintcache
@@ -30,5 +34,11 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # IntelliJ based IDEs
 .idea
 
+<<<<<<< HEAD
+=======
+# VS Code
+.vscode
+
+>>>>>>> ff6d457 (createusercommit)
 # Finder (MacOS) folder config
 .DS_Store
