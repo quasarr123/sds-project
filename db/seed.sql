@@ -1,4 +1,4 @@
-USE venue_booking;
+USE venue;
 
 -- 1. Insert Departments
 INSERT INTO departments (id, name) VALUES
@@ -9,12 +9,12 @@ INSERT INTO departments (id, name) VALUES
 
 -- 2. Insert Users (password: password123)
 -- bcrypt hash for 'password123' is '$2b$10$wT8K8N1h1q7Z7X7vF8t1yeXjB9Hq9e7e7e7e7e7e7e7e7e7e7e7e7'
-INSERT INTO users (id, name, email, mis_number, password_hash, role, department_id, is_active) VALUES
-  (1, 'System Superadmin', 'admin@college.edu', NULL, '$2b$10$wT8K8N1h1q7Z7X7vF8t1yeXjB9Hq9e7e7e7e7e7e7e7e7e7e7e7e7', 'superadmin', NULL, 1),
-  (2, 'Dr. Ramesh Kulkarni', 'ramesh.cse@college.edu', NULL, '$2b$10$wT8K8N1h1q7Z7X7vF8t1yeXjB9Hq9e7e7e7e7e7e7e7e7e7e7e7e7', 'hod', 1, 1),
-  (3, 'Dr. Priya Patil', 'priya.entc@college.edu', NULL, '$2b$10$wT8K8N1h1q7Z7X7vF8t1yeXjB9Hq9e7e7e7e7e7e7e7e7e7e7e7e7', 'hod', 2, 1),
-  (4, 'Prof. Vikas Gupta', 'vikas.faculty@college.edu', NULL, '$2b$10$wT8K8N1h1q7Z7X7vF8t1yeXjB9Hq9e7e7e7e7e7e7e7e7e7e7e7e7', 'faculty', 1, 1),
-  (5, 'Aarav Sharma', 'aarav.student@college.edu', 'MIS2024001', '$2b$10$wT8K8N1h1q7Z7X7vF8t1yeXjB9Hq9e7e7e7e7e7e7e7e7e7e7e7e7', 'student', 1, 1);
+INSERT INTO users ( name, email, mis_number, password_hash, role, department_id, is_active) VALUES
+  ('System Superadmin', 'admin@college.edu', NULL, '$2b$10$wT8K8N1h1q7Z7X7vF8t1yeXjB9Hq9e7e7e7e7e7e7e7e7e7e7e7e7', 'superadmin', NULL, 1),
+  ('Dr. Ramesh Kulkarni', 'ramesh.cse@college.edu', NULL, '$2b$10$wT8K8N1h1q7Z7X7vF8t1yeXjB9Hq9e7e7e7e7e7e7e7e7e7e7e7e7', 'hod', 1, 1),
+  ('Dr. Priya Patil', 'priya.entc@college.edu', NULL, '$2b$10$wT8K8N1h1q7Z7X7vF8t1yeXjB9Hq9e7e7e7e7e7e7e7e7e7e7e7e7', 'hod', 2, 1),
+  ('Prof. Vikas Gupta', 'vikas.faculty@college.edu', NULL, '$2b$10$wT8K8N1h1q7Z7X7vF8t1yeXjB9Hq9e7e7e7e7e7e7e7e7e7e7e7e7', 'faculty', 1, 1),
+  ('Aarav Sharma', 'aarav.student@college.edu', 'MIS2024001', '$2b$10$wT8K8N1h1q7Z7X7vF8t1yeXjB9Hq9e7e7e7e7e7e7e7e7e7e7e7e7', 'student', 1, 1);
 
 -- 3. Assign HODs to Departments
 UPDATE departments SET hod_id = 2 WHERE id = 1;
