@@ -1,0 +1,18 @@
+{
+  "name": "coep-venue-booking",
+  "version": "0.2.0",
+  "private": true,
+  "workspaces": ["frontend", "backend"],
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c blue,green \"bun run dev:backend\" \"bun run dev:frontend\"",
+    "dev:backend": "cd backend && bun run dev",
+    "dev:frontend": "cd frontend && bun run dev",
+    "db:init": "cd backend && bun run db:init",
+    "db:reset": "cd backend && bun run db:reset",
+    "build": "cd frontend && bun run build",
+    "start": "cd backend && bun run start"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

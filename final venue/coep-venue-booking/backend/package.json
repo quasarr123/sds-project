@@ -1,0 +1,23 @@
+{
+  "name": "coep-venue-booking-backend",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "db:init": "bun src/scripts/init-db.ts",
+    "db:reset": "bun src/scripts/init-db.ts --reset",
+    "test:approval": "bun src/scripts/test-approval.ts",
+    "test:availability": "bun src/scripts/test-availability.ts",
+    "test:availability-logic": "bun src/scripts/test-availability-logic.ts"
+  },
+  "dependencies": {
+    "elysia": "^1.4.30",
+    "mysql2": "^3.24.6"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5"
+  }
+}
