@@ -1,0 +1,4 @@
+// COEP Venue Booking System - Master Router Export (App.jsc alias)
+import App from './App.jsx';
+
+export { App, App as default };
