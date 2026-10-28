@@ -246,7 +246,7 @@ export function StudentDashboard({
             My Active Reservations & Status
           </h3>
           <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>
-            Approval depends on the venue: Department venue → HOD • Auditorium / Academic Complex → Superadmin • Club event → Faculty Advisor, then Superadmin
+            Approval: Any dept venue → That dept's HOD • Auditorium / Academic Complex → Superadmin • Club event → Faculty Advisor, then Superadmin
           </span>
         </div>
 

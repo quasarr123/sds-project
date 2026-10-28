@@ -4,13 +4,13 @@
   "private": true,
   "workspaces": ["frontend", "backend"],
   "scripts": {
-    "dev": "concurrently -k -n api,web -c blue,green \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "cd backend && bun run dev",
-    "dev:frontend": "cd frontend && bun run dev",
-    "db:init": "cd backend && bun run db:init",
-    "db:reset": "cd backend && bun run db:reset",
-    "build": "cd frontend && bun run build",
-    "start": "cd backend && bun run start"
+    "dev": "concurrently -k -n api,web -c blue,green \"bun run --cwd backend dev\" \"bun run --cwd frontend dev\"",
+    "dev:backend": "bun run --cwd backend dev",
+    "dev:frontend": "bun run --cwd frontend dev",
+    "db:init": "bun run --cwd backend db:init",
+    "db:reset": "bun run --cwd backend db:reset",
+    "build": "bun run --cwd frontend build",
+    "start": "bun run --cwd backend start"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"

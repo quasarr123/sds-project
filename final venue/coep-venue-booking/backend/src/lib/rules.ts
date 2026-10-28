@@ -1,7 +1,7 @@
 /**
- * Final booking & approval rules (PDF 1). Pure functions, no database access.
+ * Final booking & approval rules. Pure functions, no database access.
  *
- *  Student  + venue in own department ............ Departmental HOD
+ *  Student  + any departmental venue ............. That venue's HOD (cross-dept allowed)
  *  Student  + Auditorium / Mini Aud. / Acad. Cx .. Superadmin
  *  Student  + club event or club venue ........... Club Faculty Advisor, then Superadmin
  *  Faculty  + extra class ........................ Auto-approved (after availability check)
@@ -72,12 +72,7 @@ export function planBooking(
         endorsement: "Central venue: Superadmin approval required",
       };
     }
-    // Department venue
-    if (venue.department !== user.department) {
-      throw new HttpError(400,
-        `${venue.name} belongs to ${venue.department}. Students can book venues of their own department (${user.department}), ` +
-        "central venues (auditorium / academic complex) or, for a club event, club venues.");
-    }
+    // Department venue — any student may book any dept venue; approval goes to that venue's HOD
     return {
       route: "hod", bookingType: "regular", status: "Pending HOD",
       reviewDepartment: venue.department, advisorId: null, clubId: null, clubName: null,
