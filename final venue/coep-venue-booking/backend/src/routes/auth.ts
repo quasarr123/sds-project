@@ -113,8 +113,6 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
     }
   )
 
-  
-
   .post("/logout", async (ctx: any) => {
     const raw = ctx.cookie?.sid?.value;
     if (typeof raw === "string" && raw) {
@@ -173,12 +171,100 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
         details: "User self-service password update.",
       });
       return { ok: true };
-    })
-    ,
+    }),
     {
       body: t.Object({
         currentPassword: t.String({ minLength: 1, maxLength: 255 }),
         newPassword: t.String({ minLength: 1, maxLength: 255 }),
+      }),
+    }
+  )
+
+  .get("/departments", async () => {
+    const [rows] = await pool.execute<any[]>("SELECT id, name FROM departments ORDER BY name");
+    return rows.map((r) => ({ id: Number(r.id), name: r.name }));
+  })
+
+  .post(
+    "/register",
+    async (ctx: any) => {
+      const b = ctx.body as any;
+      const ip = clientIp(ctx);
+      const role = String(b.role);
+
+      if (!REGISTRATION_ROLES.includes(role)) {
+        return fail(ctx, 400, "Only students and faculty can self-register.");
+      }
+
+      const email = String(b.email).trim().toLowerCase();
+      if (!COEP_EMAIL.test(email)) {
+        return fail(ctx, 400, "Email must end with @coep.ac.in or @coeptech.ac.in");
+      }
+
+      const name = String(b.name).trim();
+      if (!name) return fail(ctx, 400, "Name is required.");
+
+      const password = String(b.password);
+      if (password.length < 8) {
+        return fail(ctx, 400, "Password must be at least 8 characters long.");
+      }
+
+      const departmentId = Number(b.departmentId);
+      if (!departmentId || isNaN(departmentId)) {
+        return fail(ctx, 400, "Please select a valid department.");
+      }
+      const [depRows] = await pool.execute<any[]>("SELECT id FROM departments WHERE id = ?", [departmentId]);
+      if (!depRows[0]) return fail(ctx, 400, "Selected department does not exist.");
+
+      let misNumber: string | null = null;
+      if (role === "student") {
+        misNumber = String(b.misNumber || "").trim();
+        if (!misNumber || misNumber.length > 20 || !/^[a-zA-Z0-9_\-\s]{1,20}$/.test(misNumber)) {
+          return fail(ctx, 400, "Enter a valid MIS number (up to 20 characters).");
+        }
+      }
+
+      const isActive = role === "faculty" && FACULTY_NEEDS_APPROVAL ? 0 : 1;
+      const designation = role === "student" ? "Student" : "Faculty Member";
+
+      const hash = await Bun.password.hash(password);
+      try {
+        const [res] = await pool.execute<any>(
+          `INSERT INTO users (name, email, mis_number, password_hash, role, department_id, designation, is_active)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [name, email, misNumber, hash, role, departmentId, designation, isActive]
+        );
+
+        await logAudit({
+          userId: res.insertId,
+          actor: name,
+          role,
+          action: "USER_REGISTERED",
+          target: `${email} (${role})`,
+          ip,
+          details: isActive ? "Account active immediately." : "Pending superadmin approval.",
+        });
+
+        return {
+          message: isActive
+            ? "Account created successfully. You can now log in."
+            : "Account submitted. Awaiting Superadmin clearance before first sign-in.",
+        };
+      } catch (e: any) {
+        if (e?.errno === 1062) {
+          return fail(ctx, 409, "A user with this email or MIS number already exists.");
+        }
+        throw e;
+      }
+    },
+    {
+      body: t.Object({
+        name: t.String({ minLength: 1, maxLength: 120 }),
+        email: t.String({ maxLength: 190 }),
+        role: t.String(),
+        departmentId: t.Number(),
+        password: t.String({ minLength: 8, maxLength: 255 }),
+        misNumber: t.Optional(t.Union([t.String({ maxLength: 20 }), t.Null()])),
       }),
     }
   );

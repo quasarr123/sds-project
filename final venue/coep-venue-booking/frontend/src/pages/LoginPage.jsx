@@ -68,7 +68,7 @@ export function LoginPage({ onLoginSuccess, notice = '' }) {
     const misNo = reg.mis.trim();
 
     if (!name || !em || !reg.departmentId || !reg.password) { setError('Please complete all fields.'); return; }
-    if (selectedRole === 'student' && !/^\d{6,20}$/.test(misNo)) { setError('Enter a valid MIS number (digits only).'); return; }
+    if (selectedRole === 'student' && (!misNo || misNo.length > 20 || !/^[a-zA-Z0-9_\-\s]{1,20}$/.test(misNo))) { setError('Enter a valid MIS number (up to 20 characters).'); return; }
     if (!em.endsWith('@coep.ac.in') && !em.endsWith('@coeptech.ac.in')) {
       setError('Email must end with @coep.ac.in or @coeptech.ac.in'); return;
     }

@@ -30,7 +30,6 @@ import { HolidayManagementPage } from './pages/HolidayManagementPage';
 import { BookingSettingsPage } from './pages/BookingSettingsPage';
 import { AuditLogPage } from './pages/AuditLogPage';
 import { ManagementPage } from './pages/ManagementPage';
-import CreateUser from './pages/CreateUser';
 export function App() {
   // Auth state - restored from the server-side session cookie on load
   const [currentUser, setCurrentUser] = useState(null);
@@ -377,13 +376,6 @@ export function App() {
 
       case 'audit-logs':
         return <AuditLogPage auditLogs={auditLogs} />;
-      case 'create-hod':
-        return (
-          <CreateUser
-            onCancel={() => setActivePage('dashboard')}
-            onCreated={() => refreshAudit()}
-          />
-        );
       case 'manage':
         return (
           <ManagementPage
