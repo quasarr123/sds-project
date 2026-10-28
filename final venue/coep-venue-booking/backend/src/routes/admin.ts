@@ -31,6 +31,16 @@ export const adminRoutes = new Elysia({ prefix: "/admin" })
     const b = ctx.body as any;
     if (!ROLES.includes(b.role)) return fail(ctx, 400, "Invalid role.");
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(b.email)) return fail(ctx, 400, "Enter a valid email address.");
+        const hodEmail = String(b.email).trim().toLowerCase();
+    if (!hodEmail.endsWith("@coep.ac.in") && !hodEmail.endsWith("@coeptech.ac.in"))
+      return fail(ctx, 400, "Use a COEP email ending in @coep.ac.in or @coeptech.ac.in.");
+    if (b.password !== undefined && b.password.length < 8)
+      return fail(ctx, 400, "Password must be at least 8 characters long.");
+    if (b.role === "hod") {
+      if (!b.departmentId) return fail(ctx, 400, "An HOD must be assigned to a department.");
+      const [dep] = await pool.execute<any[]>("SELECT id FROM departments WHERE id = ?", [b.departmentId]);
+      if (!dep[0]) return fail(ctx, 400, "That department does not exist.");
+    }
     const hash = await Bun.password.hash(b.password || config.demoPassword);
     try {
       const [res] = await pool.execute<any>(
