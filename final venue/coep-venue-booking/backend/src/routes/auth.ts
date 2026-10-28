@@ -11,6 +11,14 @@ const failures = new Map<string, { count: number; first: number }>();
 const WINDOW_MS = 10 * 60_000;
 const MAX_FAILS = 5;
 
+// ── Self-registration settings ──
+const REGISTRATION_ROLES = ["student", "faculty"];   // HOD / superadmin can NEVER self-register
+const FACULTY_NEEDS_APPROVAL = true;                 // true = faculty start inactive until Superadmin approves
+const COEP_EMAIL = /^[^@\s]+@(coep\.ac\.in|coeptech\.ac\.in)$/;
+const regAttempts = new Map<string, { count: number; first: number }>();
+const REG_WINDOW_MS = 60 * 60_000;
+const REG_MAX = 10;                                  // sign-ups per IP per hour
+
 function isLocked(key: string): boolean {
   const f = failures.get(key);
   if (!f) return false;
@@ -100,6 +108,79 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
     {
       body: t.Object({
         identifier: t.String({ minLength: 1, maxLength: 255 }),
+        password: t.String({ minLength: 1, maxLength: 255 }),
+      }),
+    }
+  )
+
+    // Public: department list for the sign-up form (no login needed)
+  .get("/departments", async () => {
+    const [rows] = await pool.execute<any[]>(
+      "SELECT id, name FROM departments WHERE name <> 'Central Estate & Administration Office' ORDER BY name"
+    );
+    return rows.map((r) => ({ id: Number(r.id), name: r.name }));
+  })
+
+  // Public: student / faculty self-registration
+  .post(
+    "/register",
+    async (ctx: any) => {
+      const b = ctx.body;
+      const ip = clientIp(ctx);
+
+      const now = Date.now();
+      const rec = regAttempts.get(ip);
+      if (!rec || now - rec.first > REG_WINDOW_MS) regAttempts.set(ip, { count: 1, first: now });
+      else if (++rec.count > REG_MAX) return fail(ctx, 429, "Too many sign-up attempts. Please try again later.");
+
+      const role = String(b.role);
+      if (!REGISTRATION_ROLES.includes(role)) {
+        return fail(ctx, 403, "Only students and faculty can register here. HOD accounts are created by the Superadmin.");
+      }
+      const name = String(b.name).trim();
+      const email = String(b.email).trim().toLowerCase();
+      const misNumber = role === "student" ? String(b.misNumber ?? "").trim() : "";
+
+      if (!name) return fail(ctx, 400, "Please enter your full name.");
+      if (!COEP_EMAIL.test(email)) return fail(ctx, 400, "Use a COEP email ending in @coep.ac.in or @coeptech.ac.in.");
+      if (String(b.password).length < 8) return fail(ctx, 400, "Password must be at least 8 characters long.");
+      if (role === "student" && !/^\d{6,20}$/.test(misNumber)) return fail(ctx, 400, "Enter a valid MIS number (digits only).");
+
+      const [d] = await pool.execute<any[]>("SELECT id FROM departments WHERE id = ?", [b.departmentId]);
+      if (!d[0]) return fail(ctx, 400, "Please select a valid department.");
+
+      const active = role === "faculty" && FACULTY_NEEDS_APPROVAL ? 0 : 1;
+      const hash = await Bun.password.hash(String(b.password));
+
+      try {
+        const [res] = await pool.execute<any>(
+          `INSERT INTO users (name, email, mis_number, password_hash, role, department_id, designation, is_active)
+           VALUES (?, ?, ?, ?, ?, ?, NULL, ?)`,
+          [name, email, misNumber || null, hash, role, b.departmentId, active]
+        );
+        await logAudit({
+          userId: res.insertId, actor: name, role, action: "USER_REGISTERED",
+          target: `${email} (${role})`, ip,
+          details: active ? "Self-registration." : "Self-registration; awaiting Superadmin approval.",
+        });
+        return {
+          message: active
+            ? "Account created. You can now sign in."
+            : "Account created. A Superadmin must approve it before you can sign in.",
+          pendingApproval: !active,
+        };
+      } catch (e: any) {
+        if (e?.errno === 1062) return fail(ctx, 409, "An account with this email or MIS number already exists.");
+        throw e;
+      }
+    },
+    {
+      body: t.Object({
+        role: t.String(),
+        name: t.String({ minLength: 1, maxLength: 120 }),
+        email: t.String({ maxLength: 190 }),
+        misNumber: t.Optional(t.Union([t.String({ maxLength: 20 }), t.Null()])),
+        departmentId: t.Number(),
         password: t.String({ minLength: 1, maxLength: 255 }),
       }),
     }
