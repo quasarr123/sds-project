@@ -262,8 +262,8 @@ export function App() {
             ['all-bookings', 'holidays', 'settings', 'audit-logs', 'manage'].includes(activePage)
               ? 'Superadmin / Registrar'
               : activePage.includes('dept')
-              ? 'Head of Department (HOD)'
-              : 'Faculty Advisor'
+                ? 'Head of Department (HOD)'
+                : 'Faculty Advisor'
           }
           currentRole={currentUser.role}
           onBack={() => setActivePage('dashboard')}
@@ -314,7 +314,12 @@ export function App() {
             venues={venues}
             holidays={holidays}
             auditLogs={auditLogs}
-            onNavigate={(page) => setActivePage(page)}
+
+            onNavigate={(page) => {
+              console.log('Sidebar navigation clicked:', page);
+              setActivePage(page);
+            }}
+
           />
         );
 
@@ -464,7 +469,10 @@ export function App() {
         <Sidebar
           currentRole={currentRole}
           activePage={activePage}
-          onNavigate={(page) => setActivePage(page)}
+          onNavigate={(page) => {
+            console.log('Sidebar navigation clicked:', page);
+            setActivePage(page);
+          }}
           onLogout={handleLogout}
           counts={badgeCounts}
         />
@@ -480,10 +488,10 @@ export function App() {
               currentRole === 'superadmin'
                 ? badgeCounts.allPending
                 : currentRole === 'hod'
-                ? badgeCounts.pendingHOD
-                : currentRole === 'faculty'
-                ? badgeCounts.pendingEndorsements
-                : 0
+                  ? badgeCounts.pendingHOD
+                  : currentRole === 'faculty'
+                    ? badgeCounts.pendingEndorsements
+                    : 0
             }
             onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
           />

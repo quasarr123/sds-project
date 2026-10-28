@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Environment variables (NEVER commit secrets!)
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
+build/
+out/
+
+# Bun
+.bun/
+
+# SSL certs / secrets
+*.pem
+*.key
+*.crt
+certs/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+bun-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE / Editor
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# TypeScript
+*.tsbuildinfo
+
+# Temporary
+tmp/
+temp/
+.cache/
