@@ -12,6 +12,7 @@ import {
   LogOut,
   Users,
   Compass,
+  UserPlus,
 } from 'lucide-react';
 
 export function Sidebar({
@@ -53,6 +54,7 @@ export function Sidebar({
           { id: 'settings', label: 'Booking Settings', icon: Sliders },
           { id: 'audit-logs', label: 'System Audit Logs', icon: FileText },
           { id: 'manage', label: 'Users, Venues & Clubs', icon: Building },
+                    { id: 'create-hod', label: 'Create HOD Account', icon: UserPlus },
         ];
       default:
         return [];

@@ -56,6 +56,8 @@ export const api = {
   },
   changePassword: (currentPassword, newPassword) =>
     request('POST', '/auth/change-password', { currentPassword, newPassword }),
+    register: (payload) => request('POST', '/auth/register', payload, { silent401: true }),
+  publicDepartments: () => request('GET', '/auth/departments', undefined, { silent401: true }),
 
   // data
   venues: () => request('GET', '/venues'),

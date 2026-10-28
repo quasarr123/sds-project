@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertCircle, ArrowRight, ArrowLeft } from 'lucide-react';
+import { AlertCircle, ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import coepppImg from '../assets/coeppp.jpg';
 import { api } from '../services/client';
 
@@ -27,15 +27,74 @@ export function LoginPage({ onLoginSuccess, notice = '' }) {
   const [forgotModal, setForgotModal] = useState(false);
   const [forgotSent,  setForgotSent]  = useState(false);
 
-  function handleRoleContinue() {
+    // Self-registration (students & faculty only)
+  const [mode, setMode] = useState('login'); // 'login' | 'register'
+  const [reg, setReg] = useState({ name: '', mis: '', email: '', departmentId: '', password: '', confirm: '' });
+  const [departments, setDepartments] = useState([]);
+  const [regNotice, setRegNotice] = useState('');
+  const canRegister = selectedRole === 'student' || selectedRole === 'faculty';
+  const setR = (k) => (e) => setReg((r) => ({ ...r, [k]: e.target.value }));
+   function handleRoleContinue() {
     setSelectedRole(rolePickerValue);
     setError('');
+    setMode('login');
+    setRegNotice('');
     setMis(''); setEmail(''); setPassword('');
   }
 
   function handleBack() {
     setSelectedRole(null);
     setError('');
+    setMode('login');
+    setRegNotice('');
+  }
+
+  async function openRegister() {
+    setError('');
+    setRegNotice('');
+    setReg({ name: '', mis: '', email: email.trim(), departmentId: '', password: '', confirm: '' });
+    setMode('register');
+    if (!departments.length) {
+      try { setDepartments(await api.publicDepartments()); }
+      catch (e) { setError(e.message || 'Could not load departments.'); }
+    }
+  }
+
+  async function handleRegister(e) {
+    e.preventDefault();
+    setError('');
+    const name = reg.name.trim();
+    const em = reg.email.trim().toLowerCase();
+    const misNo = reg.mis.trim();
+
+    if (!name || !em || !reg.departmentId || !reg.password) { setError('Please complete all fields.'); return; }
+    if (selectedRole === 'student' && !/^\d{6,20}$/.test(misNo)) { setError('Enter a valid MIS number (digits only).'); return; }
+    if (!em.endsWith('@coep.ac.in') && !em.endsWith('@coeptech.ac.in')) {
+      setError('Email must end with @coep.ac.in or @coeptech.ac.in'); return;
+    }
+    if (reg.password.length < 8) { setError('Password must be at least 8 characters long.'); return; }
+    if (reg.password !== reg.confirm) { setError('Passwords do not match.'); return; }
+
+    setLoading(true);
+    try {
+      const res = await api.register({
+        role: selectedRole,
+        name,
+        email: em,
+        misNumber: selectedRole === 'student' ? misNo : null,
+        departmentId: Number(reg.departmentId),
+        password: reg.password,
+      });
+      setMode('login');
+      setEmail(em);
+      setMis(selectedRole === 'student' ? misNo : '');
+      setPassword('');
+      setRegNotice(res.message || 'Account created. You can now sign in.');
+    } catch (err) {
+      setError(err.message || 'Could not create the account.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleSubmit(e) {
@@ -268,6 +327,30 @@ export function LoginPage({ onLoginSuccess, notice = '' }) {
         .lp-modal-btn { padding: 8px 18px; border-radius: 8px; border: none; font-weight: 600; font-size: 13px; cursor: pointer; }
         .lp-modal-cancel  { background: #f1f5f9; color: #475569; }
         .lp-modal-primary { background: #4fa39b; color: #fff; }
+        .lp-field select {
+          width: 100%;
+          background: #122820;
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 9999px;
+          padding: 10px 16px;
+          font-size: 13px; color: #fff; outline: none;
+          box-sizing: border-box;
+        }
+        .lp-field select:focus {
+          border-color: #4fa39b;
+          box-shadow: 0 0 0 3px rgba(79,163,155,0.22);
+        }
+        .lp-field select option { background: #132821; }
+        .lp-success {
+          display: flex; align-items: center; gap: 8px;
+          background: rgba(34,197,94,0.15);
+          border: 1px solid rgba(34,197,94,0.35);
+          color: #86efac; font-size: 12px;
+          padding: 9px 14px; border-radius: 10px; margin-bottom: 14px;
+        }
+        .lp-switch { text-align: center; margin-top: 14px; font-size: 12px; color: #9abdb0; }
+        .lp-switch span { color: #8cded2; cursor: pointer; font-weight: 600; }
+        .lp-switch span:hover { text-decoration: underline; }
 
         @media (max-width: 500px) {
           .lp-card { border-radius: 18px; }
@@ -325,14 +408,18 @@ export function LoginPage({ onLoginSuccess, notice = '' }) {
             </>
           )}
 
-          {/* STEP 2: Role-specific login form */}
+                    {/* STEP 2: Role-specific login / sign-up form */}
           {selectedRole !== null && (
             <>
               <div className="lp-form-header">
-                <button className="lp-back-btn" onClick={handleBack} title="Change role">
+                <button
+                  className="lp-back-btn"
+                  onClick={mode === 'register' ? () => { setMode('login'); setError(''); } : handleBack}
+                  title={mode === 'register' ? 'Back to login' : 'Change role'}
+                >
                   <ArrowLeft size={14} />
                 </button>
-                <p className="lp-form-title">Login</p>
+                <p className="lp-form-title">{mode === 'register' ? 'Create Account' : 'Login'}</p>
               </div>
               <span className="lp-role-badge">{roleLabel}</span>
 
@@ -342,38 +429,113 @@ export function LoginPage({ onLoginSuccess, notice = '' }) {
                   <span>{error}</span>
                 </div>
               )}
-
-              <form onSubmit={handleSubmit}>
-
-                {/* MIS only for students */}
-                {selectedRole === 'student' && (
-                  <div className="lp-field">
-                    <label>COEP MIS Number</label>
-                    <input type="text" placeholder="e.g. 112103045"
-                      value={mis} onChange={e => setMis(e.target.value)} />
-                  </div>
-                )}
-
-                <div className="lp-field">
-                  <label>COEP Outlook ID{selectedRole === 'student' ? ' (optional if MIS entered)' : ''}</label>
-                  <input type="email" required={selectedRole !== 'student'} placeholder="name@coep.ac.in"
-                    value={email} onChange={e => setEmail(e.target.value)} />
+              {mode === 'login' && regNotice && (
+                <div className="lp-success">
+                  <CheckCircle2 size={14} />
+                  <span>{regNotice}</span>
                 </div>
+              )}
 
-                <div className="lp-field">
-                  <label>Password</label>
-                  <input type="password" required placeholder="Enter your password"
-                    value={password} onChange={e => setPassword(e.target.value)} />
-                  <div className="lp-pw-hint">
-                    <span onClick={() => setForgotModal(true)}>Forgot Password?</span>
-                    <span onClick={() => setForgotModal(true)}>Create New Password</span>
+              {mode === 'login' ? (
+                <>
+                  <form onSubmit={handleSubmit}>
+
+                    {/* MIS only for students */}
+                    {selectedRole === 'student' && (
+                      <div className="lp-field">
+                        <label>COEP MIS Number</label>
+                        <input type="text" placeholder="e.g. 112103045"
+                          value={mis} onChange={e => setMis(e.target.value)} />
+                      </div>
+                    )}
+
+                    <div className="lp-field">
+                      <label>COEP Outlook ID{selectedRole === 'student' ? ' (optional if MIS entered)' : ''}</label>
+                      <input type="email" required={selectedRole !== 'student'} placeholder="name@coep.ac.in"
+                        value={email} onChange={e => setEmail(e.target.value)} />
+                    </div>
+
+                    <div className="lp-field">
+                      <label>Password</label>
+                      <input type="password" required placeholder="Enter your password"
+                        value={password} onChange={e => setPassword(e.target.value)} />
+                      <div className="lp-pw-hint">
+                        <span onClick={() => setForgotModal(true)}>Forgot Password?</span>
+                        <span onClick={() => setForgotModal(true)}>Create New Password</span>
+                      </div>
+                    </div>
+
+                    <button type="submit" disabled={loading} className="lp-btn">
+                      {loading ? 'Authenticating...' : <><span>Login to Portal</span><ArrowRight size={16} /></>}
+                    </button>
+                  </form>
+
+                  {canRegister && (
+                    <div className="lp-switch">
+                      New to the portal? <span onClick={openRegister}>Create an account</span>
+                    </div>
+                  )}
+                  {selectedRole === 'hod' && (
+                    <div className="lp-switch">
+                      HOD accounts are created by the Superadmin.
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <form onSubmit={handleRegister}>
+                    <div className="lp-field">
+                      <label>Full name</label>
+                      <input type="text" required placeholder="e.g. Aarav Deshmukh"
+                        value={reg.name} onChange={setR('name')} />
+                    </div>
+
+                    {selectedRole === 'student' && (
+                      <div className="lp-field">
+                        <label>COEP MIS Number</label>
+                        <input type="text" required placeholder="e.g. 112103045"
+                          value={reg.mis} onChange={setR('mis')} />
+                      </div>
+                    )}
+
+                    <div className="lp-field">
+                      <label>COEP Outlook ID</label>
+                      <input type="email" required placeholder="name@coep.ac.in"
+                        value={reg.email} onChange={setR('email')} />
+                    </div>
+
+                    <div className="lp-field">
+                      <label>Department</label>
+                      <select required value={reg.departmentId} onChange={setR('departmentId')}>
+                        <option value="">Select your department…</option>
+                        {departments.map((d) => (
+                          <option key={d.id} value={d.id}>{d.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="lp-field">
+                      <label>Password (min 8 characters)</label>
+                      <input type="password" required minLength={8} autoComplete="new-password"
+                        value={reg.password} onChange={setR('password')} />
+                    </div>
+
+                    <div className="lp-field">
+                      <label>Confirm password</label>
+                      <input type="password" required minLength={8} autoComplete="new-password"
+                        value={reg.confirm} onChange={setR('confirm')} />
+                    </div>
+
+                    <button type="submit" disabled={loading} className="lp-btn">
+                      {loading ? 'Creating account...' : <><span>Create Account</span><ArrowRight size={16} /></>}
+                    </button>
+                  </form>
+
+                  <div className="lp-switch">
+                    Already have an account? <span onClick={() => { setMode('login'); setError(''); }}>Back to login</span>
                   </div>
-                </div>
-
-                <button type="submit" disabled={loading} className="lp-btn">
-                  {loading ? 'Authenticating...' : <><span>Login to Portal</span><ArrowRight size={16} /></>}
-                </button>
-              </form>
+                </>
+              )}
 
               <div className="lp-footer">
                 <span className="lp-footer-link" onClick={() => alert('COEP Space Allocation & Sound Ordinance Policy 2026')}>
