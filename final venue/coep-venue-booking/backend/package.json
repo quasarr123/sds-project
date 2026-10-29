@@ -10,7 +10,8 @@
     "db:reset": "bun src/scripts/init-db.ts --reset",
     "test:approval": "bun src/scripts/test-approval.ts",
     "test:availability": "bun src/scripts/test-availability.ts",
-    "test:availability-logic": "bun src/scripts/test-availability-logic.ts"
+    "test:availability-logic": "bun src/scripts/test-availability-logic.ts",
+    "typecheck": "bun check"
   },
   "dependencies": {
     "elysia": "^1.4.30",
@@ -19,5 +20,6 @@
   "devDependencies": {
     "@types/bun": "latest",
     "typescript": "^5"
-  }
+  },
+  "module": "src/index.ts"
 }
